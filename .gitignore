@@ -1,0 +1,35 @@
+# Visual Studio
+.vs/
+*.vcxproj*
+*.sln
+*.user
+*.suo
+
+# CMake
+CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake
+Makefile
+build/
+out/
+
+# Compiled binaries
+*.exe
+*.out
+*.obj
+*.o
+*.a
+*.lib
+*.dll
+*.pdb
+
+# Presets + Backup
+CMakeUserPresets.json
+*.log
+*.tmp
+*.swp
+*.bak
+
+# Windows junk
+Thumbs.db
+Desktop.ini
