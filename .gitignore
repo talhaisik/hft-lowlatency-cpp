@@ -1,35 +1,61 @@
-# Visual Studio
-.vs/
-*.vcxproj*
-*.sln
-*.user
-*.suo
-
-# CMake
-CMakeFiles/
-CMakeCache.txt
-cmake_install.cmake
-Makefile
+# CMake build directories
 build/
 out/
+cmake-build*/
 
-# Compiled binaries
-*.exe
-*.out
-*.obj
+# Visual Studio files
+.vs/
+*.suo
+*.user
+*.sdf
+*.opensdf
+*.sln
+*.vcxproj
+*.vcxproj.filters
+
+# Compiled Object files
+*.slo
+*.lo
 *.o
+*.obj
+
+# Precompiled Headers
+*.gch
+*.pch
+
+# Compiled Dynamic libraries
+*.so
+*.dylib
+*.dll
+
+# Fortran module files
+*.mod
+*.smod
+
+# Compiled Static libraries
+*.lai
+*.la
 *.a
 *.lib
-*.dll
+
+# Executables
+*.exe
+*.out
+*.app
+
+# Profiling and debugging files
 *.pdb
+*.ilk
+*.idb
 
-# Presets + Backup
-CMakeUserPresets.json
-*.log
-*.tmp
-*.swp
-*.bak
-
-# Windows junk
+# OS-specific files
+.DS_Store
 Thumbs.db
-Desktop.ini
+
+# Vcpkg artifacts
+vcpkg/
+vcpkg_installed/
+
+# Dependency directories
+third_party/
+external/
