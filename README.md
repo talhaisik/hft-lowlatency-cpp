@@ -28,15 +28,23 @@ This repository serves as a personal deep-dive into modern C++ techniques, speci
 ### Phase 1: C++ Fundamentals
 - [x] Move Semantics
 - [x] Compile-Time Optimizations
-- [x] Lock-Free Ring Buffer Implementation ✅ (31.5x faster than vector)
+- [x] **Lock-Free Ring Buffer Implementation** ✅
+  - **Performance**: 31.5x faster than vector for circular buffer operations
+  - **Throughput**: 544 million operations/second (SPSC)
+  - **Key learnings**:
+    - Cache line alignment to prevent false sharing
+    - Acquire-release memory ordering for lock-free synchronization
+    - Power-of-2 bit masking for fast modulo operations
+    - Single Producer Single Consumer (SPSC) pattern optimization
+    - Proper benchmarking methodology (warmup, multiple runs, fair comparisons)
 - [ ] Smart Pointer Deep Dive
 - [ ] Advanced Memory Management Techniques
 
 ### Phase 2: Concurrency and Performance
 - [ ] Lock-Free Data Structures
-  - Concurrent Queue
-  - Lock-Free Hash Map
-  - Atomic Smart Pointers
+  - [ ] MPSC Concurrent Queue (with CAS operations)
+  - [ ] Lock-Free Hash Map
+  - [ ] Atomic Smart Pointers
 - [ ] Memory Pool Allocators
 - [ ] Thread Synchronization Primitives
 - [ ] Cache-Aware Programming Techniques
@@ -56,12 +64,6 @@ This repository serves as a personal deep-dive into modern C++ techniques, speci
 - **Modern C++**: Leveraging C++20/C++23 features
 - **Educational Focus**: Clear, commented implementations
 
-## 🔍 Learning Resources
-
-### Recommended References
--
--
-
 ## 🏗 Project Structure
 
 ```
@@ -73,8 +75,10 @@ hft-lowlatency-cpp/
 ├── 02_ring_buffer/
 │   ├── include/
 │   │   └── ring_buffer.hpp
-│   └── src/
-│       └── ring_buffer_benchmark.cpp
+│   ├── src/
+│   │   └── ring_buffer_benchmark.cpp
+│   └── docs/
+│       └── LEARNINGS.md
 │
 └── (Future Modules)
 ```
@@ -119,3 +123,47 @@ This repository is not a production trading system, but a systematic exploration
 - **Goal**: Understanding, not absolute speed
 - **Method**: Clear, educational implementations
 - **Focus**: Learning performance techniques
+
+## 📈 Progress Notes
+
+### Completed Modules
+
+#### Lock-Free Ring Buffer (SPSC)
+
+**What I Built**:
+- Single Producer Single Consumer lock-free ring buffer
+- Power-of-2 sized buffer with bit-masking for fast indexing
+- Cache-line aligned atomics to prevent false sharing
+
+**Key Technical Insights**:
+- Memory ordering: Acquire-release pairs create synchronization points without seq_cst overhead
+- False sharing: Separate cache lines for head/tail prevented ~10x performance degradation
+- SPSC optimization: No CAS needed when single thread owns each write index
+
+**Performance Results**:
+- 31.5x faster than std::vector for circular buffer operations
+- 544 Million operations/second throughput
+- Consistent ~16-24ms for 10M operations across runs
+
+**What I Learned**:
+- Atomics provide indivisibility, not just thread-safety
+- Cache coherency is critical for multi-threaded performance
+- Proper benchmarking methodology prevents misleading results
+- Lock-free doesn't always mean CAS - ownership patterns matter
+
+**Future Improvements to Explore**:
+- Multi-threaded producer/consumer benchmark
+- MPSC variant with CAS operations
+- Performance profiling with perf/vtune
+- Different memory ordering experiments
+
+---
+
+## 🎓 Next Steps
+
+**Immediate**: Memory Pool Allocator
+- Eliminate heap allocation overhead
+- O(1) allocation/deallocation
+- Cache-aware design patterns
+
+**Future**: Lock-Free MPSC Queue, Advanced Allocators, SIMD optimizations
