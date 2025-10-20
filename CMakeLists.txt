@@ -14,6 +14,10 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 # Global compiler options
 if(MSVC)
     add_compile_options(/W4)
+    # Allow specific warnings that are intentional
+    add_compile_options(/wd4324)  # Padding due to alignment
+    add_compile_options(/wd4834)  # Discarding [[nodiscard]]
+    add_compile_options(/wd4267)  # size_t to int conversion in tests
     # Optimization for Release
     if(CMAKE_BUILD_TYPE STREQUAL "Release")
         add_compile_options(/O2 /Oi /Ot /GL)
@@ -42,6 +46,7 @@ message(STATUS "===========================================")
 add_subdirectory(01_modern_cpp_basics)
 add_subdirectory(02_ring_buffer)
 add_subdirectory(03_memory_pool)
+add_subdirectory(04_smart_pointers)
 
 # Custom targets for convenience
 add_custom_target(run_all_examples

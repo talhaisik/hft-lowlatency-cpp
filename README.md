@@ -37,7 +37,18 @@ This repository serves as a personal deep-dive into modern C++ techniques, speci
     - Power-of-2 bit masking for fast modulo operations
     - Single Producer Single Consumer (SPSC) pattern optimization
     - Proper benchmarking methodology (warmup, multiple runs, fair comparisons)
-- [ ] Smart Pointer Deep Dive
+- [x] **Smart Pointer Deep Dive** ✅
+  - **Components**: `UniquePtr`, `SharedPtr`, `WeakPtr`
+  - **Performance**: Zero-overhead unique_ptr, lock-free shared_ptr
+  - **Key learnings**:
+    - RAII and deterministic resource management
+    - Move semantics and perfect forwarding
+    - Atomic reference counting with `compare_exchange_weak`
+    - Memory ordering semantics (relaxed, acquire, release, acq_rel)
+    - Breaking circular references with weak pointers
+    - Custom deleters and type erasure
+    - Control block design for shared ownership
+    - Thread-safe reference counting vs object access
 - [ ] Advanced Memory Management Techniques
 
 ### Phase 2: Concurrency and Performance
@@ -87,6 +98,32 @@ hft-lowlatency-cpp/
 │   │   └── ring_buffer_benchmark.cpp
 │   └── docs/
 │       └── LEARNINGS.md
+│
+├── 03_memory_pool/
+│   ├── include/
+│   │   └── memory_pool.hpp
+│   ├── src/
+│   │   └── memory_pool_benchmark.cpp
+│   │   └── memory_pool_example.cpp
+│   ├── docs/
+│   │   └── DESIGN.md
+│   └── CMakeLists.txt
+│
+├── 04_smart_pointers/
+│   ├── include/
+│   │   ├── unique_ptr.hpp
+│   │   ├── shared_ptr.hpp
+│   │   ├── weak_ptr.hpp
+│   │   └── unicode_console.hpp
+│   ├── src/
+│   │   ├── minimal_test.cpp
+│   │   └── smart_ptr_demo.cpp
+│   ├── docs/
+│   │   ├── UNIQUE_PTR.md
+│   │   ├── SHARED_PTR.md
+│   │   └── WEAK_PTR.md
+│   ├── CMakeLists.txt
+│   └── README.md
 │
 └── (Future Modules)
 ```
