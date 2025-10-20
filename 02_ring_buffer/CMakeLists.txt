@@ -13,21 +13,17 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
-# Compiler-specific configurations
+# Compiler warnings
 if(MSVC)
-    # MSVC Specific Flags
-    add_compile_options(
-        /W4           # Enable high warning level
-        /WX-          # Do NOT treat warnings as errors
-        /permissive-  # Strict standards conformance
-    )
+    add_compile_options(/W4)
+    # Allow alignment padding warnings - intentional for performance
+    add_compile_options(/wd4324)
+    # Allow discarding [[nodiscard]] in benchmarks
+    add_compile_options(/wd4834)
+    # Allow size_t to int conversions in benchmarks
+    add_compile_options(/wd4267)
 else()
-    # GCC and Clang Flags
-    add_compile_options(
-        -Wall         # Enable all warnings
-        -Wextra       # Extra warnings
-        -march=native # Optimize for current CPU architecture
-    )
+    add_compile_options(-Wall -Wextra -Wpedantic)
 endif()
 
 # Benchmark executable

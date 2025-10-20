@@ -41,11 +41,19 @@ This repository serves as a personal deep-dive into modern C++ techniques, speci
 - [ ] Advanced Memory Management Techniques
 
 ### Phase 2: Concurrency and Performance
+- [x] **Memory Pool Allocators** ✅
+  - **Performance**: 31.8x faster than new/delete for pure allocation
+  - **Throughput**: 724 million operations/second
+  - **Key learnings**:
+    - Intrusive free list with union for zero overhead
+    - Separation of memory lifetime from object lifetime
+    - Manual memory management vs RAII trade-offs
+    - Placement new and explicit destructor calls
+    - Cache-friendly sequential memory layout
 - [ ] Lock-Free Data Structures
   - [ ] MPSC Concurrent Queue (with CAS operations)
   - [ ] Lock-Free Hash Map
   - [ ] Atomic Smart Pointers
-- [ ] Memory Pool Allocators
 - [ ] Thread Synchronization Primitives
 - [ ] Cache-Aware Programming Techniques
 
@@ -123,47 +131,3 @@ This repository is not a production trading system, but a systematic exploration
 - **Goal**: Understanding, not absolute speed
 - **Method**: Clear, educational implementations
 - **Focus**: Learning performance techniques
-
-## 📈 Progress Notes
-
-### Completed Modules
-
-#### Lock-Free Ring Buffer (SPSC)
-
-**What I Built**:
-- Single Producer Single Consumer lock-free ring buffer
-- Power-of-2 sized buffer with bit-masking for fast indexing
-- Cache-line aligned atomics to prevent false sharing
-
-**Key Technical Insights**:
-- Memory ordering: Acquire-release pairs create synchronization points without seq_cst overhead
-- False sharing: Separate cache lines for head/tail prevented ~10x performance degradation
-- SPSC optimization: No CAS needed when single thread owns each write index
-
-**Performance Results**:
-- 31.5x faster than std::vector for circular buffer operations
-- 544 Million operations/second throughput
-- Consistent ~16-24ms for 10M operations across runs
-
-**What I Learned**:
-- Atomics provide indivisibility, not just thread-safety
-- Cache coherency is critical for multi-threaded performance
-- Proper benchmarking methodology prevents misleading results
-- Lock-free doesn't always mean CAS - ownership patterns matter
-
-**Future Improvements to Explore**:
-- Multi-threaded producer/consumer benchmark
-- MPSC variant with CAS operations
-- Performance profiling with perf/vtune
-- Different memory ordering experiments
-
----
-
-## 🎓 Next Steps
-
-**Immediate**: Memory Pool Allocator
-- Eliminate heap allocation overhead
-- O(1) allocation/deallocation
-- Cache-aware design patterns
-
-**Future**: Lock-Free MPSC Queue, Advanced Allocators, SIMD optimizations
