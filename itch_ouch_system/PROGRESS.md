@@ -44,7 +44,7 @@ Building a low-latency educational trading system implementing NASDAQ ITCH 5.0 (
 #### 2. ITCH Message Definitions (`include/itch/messages.hpp`)
 **Status:** ✅ Implemented & Tested (Full ITCH 5.0 Coverage)
 
-**Implemented Message Types (22 total):**
+**Implemented Message Types (23 total - Complete ITCH 5.0 Coverage):**
 
 **System Events:**
 - `SystemEvent` ('S') - Market open/close/halt events
@@ -75,6 +75,9 @@ Building a low-latency educational trading system implementing NASDAQ ITCH 5.0 (
 **Imbalance Messages:**
 - `NOII` ('I') - Net Order Imbalance Indicator
 - `RPII` ('N') - Retail Price Improvement Indicator
+
+**Direct Listing:**
+- `DLCR` ('O') - Direct Listing with Capital Raise Price Discovery
 
 **Features:**
 - Binary protocol parsing with proper endian conversion
@@ -492,7 +495,7 @@ struct MoldUDP64Packet {
 **Phase 1 Status: ✅ COMPLETE**
 
 We have successfully built the foundation with:
-- **Complete protocol coverage (all 22 ITCH message types)** - Implemented and tested
+- **Complete protocol coverage (all 23 ITCH 5.0 message types)** - Implemented and tested
 - **OrderBook with lock-free SeqLock** - Implemented and tested
 - **Comprehensive unit testing** - All tests passing
 - Cross-platform design - Tested on Windows only, designed for Linux/macOS

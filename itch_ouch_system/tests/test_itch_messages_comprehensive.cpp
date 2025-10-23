@@ -588,6 +588,108 @@ void test_quantity_boundaries() {
     }
 }
 
+void test_dlcr_message() {
+    std::cout << "\n=== Test: DLCR (Direct Listing with Capital Raise) Message ===\n";
+
+    // Create a DLCR message (Type 'O', 48 bytes)
+    std::vector<uint8_t> buffer(48, 0);
+    buffer[0] = 'O';  // Message type
+    
+    // Stock locate = 1
+    buffer[1] = 0x00;
+    buffer[2] = 0x01;
+    
+    // Tracking number = 2
+    buffer[3] = 0x00;
+    buffer[4] = 0x02;
+    
+    // Timestamp = 34200000000000 (9:30 AM in nanoseconds)
+    uint64_t ts = 34200000000000ULL;
+    buffer[5] = (ts >> 40) & 0xFF;
+    buffer[6] = (ts >> 32) & 0xFF;
+    buffer[7] = (ts >> 24) & 0xFF;
+    buffer[8] = (ts >> 16) & 0xFF;
+    buffer[9] = (ts >> 8) & 0xFF;
+    buffer[10] = ts & 0xFF;
+    
+    // Symbol = "COIN    "
+    std::memcpy(&buffer[11], "COIN    ", 8);
+    
+    // Open eligibility status = 'Y' (Eligible)
+    buffer[19] = 'Y';
+    
+    // Min allowable price = 1000000 ($100.0000)
+    uint32_t min_price = 1000000;
+    buffer[20] = (min_price >> 24) & 0xFF;
+    buffer[21] = (min_price >> 16) & 0xFF;
+    buffer[22] = (min_price >> 8) & 0xFF;
+    buffer[23] = min_price & 0xFF;
+    
+    // Max allowable price = 3000000 ($300.0000)
+    uint32_t max_price = 3000000;
+    buffer[24] = (max_price >> 24) & 0xFF;
+    buffer[25] = (max_price >> 16) & 0xFF;
+    buffer[26] = (max_price >> 8) & 0xFF;
+    buffer[27] = max_price & 0xFF;
+    
+    // Near execution price = 2000000 ($200.0000)
+    uint32_t near_price = 2000000;
+    buffer[28] = (near_price >> 24) & 0xFF;
+    buffer[29] = (near_price >> 16) & 0xFF;
+    buffer[30] = (near_price >> 8) & 0xFF;
+    buffer[31] = near_price & 0xFF;
+    
+    // Near execution time = 34200000000000
+    buffer[32] = (ts >> 56) & 0xFF;
+    buffer[33] = (ts >> 48) & 0xFF;
+    buffer[34] = (ts >> 40) & 0xFF;
+    buffer[35] = (ts >> 32) & 0xFF;
+    buffer[36] = (ts >> 24) & 0xFF;
+    buffer[37] = (ts >> 16) & 0xFF;
+    buffer[38] = (ts >> 8) & 0xFF;
+    buffer[39] = ts & 0xFF;
+    
+    // Lower price range collar = 1800000 ($180.0000, 10% below near execution)
+    uint32_t lower_collar = 1800000;
+    buffer[40] = (lower_collar >> 24) & 0xFF;
+    buffer[41] = (lower_collar >> 16) & 0xFF;
+    buffer[42] = (lower_collar >> 8) & 0xFF;
+    buffer[43] = lower_collar & 0xFF;
+    
+    // Upper price range collar = 2200000 ($220.0000, 10% above near execution)
+    uint32_t upper_collar = 2200000;
+    buffer[44] = (upper_collar >> 24) & 0xFF;
+    buffer[45] = (upper_collar >> 16) & 0xFF;
+    buffer[46] = (upper_collar >> 8) & 0xFF;
+    buffer[47] = upper_collar & 0xFF;
+
+    // Parse the message
+    auto result = parse_message(buffer.data(), buffer.size());
+    assert(result.is_success());
+    
+    auto msg = std::get<DLCR>(result.message.value());
+    
+    // Validate all fields
+    assert(msg.stock_locate == 1);
+    assert(msg.tracking_number == 2);
+    assert(msg.timestamp == 34200000000000ULL);
+    assert(msg.get_symbol() == "COIN");
+    assert(msg.open_eligibility_status == 'Y');
+    assert(msg.min_allowable_price == 1000000);
+    assert(msg.max_allowable_price == 3000000);
+    assert(msg.near_execution_price == 2000000);
+    assert(msg.near_execution_time == 34200000000000ULL);
+    assert(msg.lower_price_range_collar == 1800000);
+    assert(msg.upper_price_range_collar == 2200000);
+    
+    std::cout << "[OK] DLCR message parsed correctly\n";
+    std::cout << "     Symbol: " << msg.get_symbol() << "\n";
+    std::cout << "     Eligibility: " << msg.open_eligibility_status << "\n";
+    std::cout << "     Near Execution Price: $" << (msg.near_execution_price / 10000.0) << "\n";
+    std::cout << "     Price Range: $" << (msg.lower_price_range_collar / 10000.0) 
+              << " - $" << (msg.upper_price_range_collar / 10000.0) << "\n";
+}
+
 // =============================================================================
 // ERROR HANDLING TESTS
 // =============================================================================
@@ -676,6 +778,9 @@ int main() {
         test_mwcb_status_all_fields();
         test_ipo_quoting_period_update_all_fields();
         test_luld_auction_collar_all_fields();
+
+        // DLCR message
+        test_dlcr_message();
 
         // Edge cases
         test_symbol_padding();

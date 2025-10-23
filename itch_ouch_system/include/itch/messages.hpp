@@ -158,6 +158,9 @@ namespace hft::itch {
         // Retail Price Improvement Indicator (RPII)
         RPII = 'N',
 
+        // Direct Listing with Capital Raise Price Discovery
+        DLCR = 'O',
+
         UNKNOWN = 0
     };
 
@@ -185,6 +188,7 @@ namespace hft::itch {
         case MessageType::BROKEN_TRADE: return "BROKEN_TRADE";
         case MessageType::NOII: return "NOII";
         case MessageType::RPII: return "RPII";
+        case MessageType::DLCR: return "DLCR";
         default: return "UNKNOWN";
         }
     }
@@ -1145,7 +1149,7 @@ namespace hft::itch {
         }
     };
 
-    /// RPII (Type 'N') - Length: 19 bytes
+    /// RPII (Type 'N') - Length: 20 bytes
     struct RPII {
         static constexpr MessageType TYPE = MessageType::RPII;
         static constexpr size_t SIZE = 20;
@@ -1179,6 +1183,58 @@ namespace hft::itch {
         }
     };
 
+    /// DLCR (Type 'O') - Direct Listing with Capital Raise Price Discovery - Length: 48 bytes
+    struct DLCR {
+        static constexpr MessageType TYPE = MessageType::DLCR;
+        static constexpr size_t SIZE = 48;
+        
+        static constexpr size_t OFF_STOCK_LOCATE = 1;
+        static constexpr size_t OFF_TRACKING_NUM = 3;
+        static constexpr size_t OFF_TIMESTAMP = 5;
+        static constexpr size_t OFF_SYMBOL = 11;
+        static constexpr size_t OFF_OPEN_ELIGIBILITY_STATUS = 19;
+        static constexpr size_t OFF_MIN_ALLOWABLE_PRICE = 20;
+        static constexpr size_t OFF_MAX_ALLOWABLE_PRICE = 24;
+        static constexpr size_t OFF_NEAR_EXECUTION_PRICE = 28;
+        static constexpr size_t OFF_NEAR_EXECUTION_TIME = 32;
+        static constexpr size_t OFF_LOWER_PRICE_RANGE_COLLAR = 40;
+        static constexpr size_t OFF_UPPER_PRICE_RANGE_COLLAR = 44;
+
+        uint16_t stock_locate;
+        uint16_t tracking_number;
+        uint64_t timestamp;
+        std::array<char, 8> symbol;
+        char open_eligibility_status;  // 'N' = Not Eligible, 'Y' = Eligible
+        uint32_t min_allowable_price;  // 20% below Registration Statement Lower Price
+        uint32_t max_allowable_price;  // 80% above Registration Statement Highest Price
+        uint32_t near_execution_price; // Current reference price when DLCR volatility test passed
+        uint64_t near_execution_time;  // Time at which near execution price was set
+        uint32_t lower_price_range_collar; // 10% below Near Execution Price
+        uint32_t upper_price_range_collar; // 10% above Near Execution Price
+
+        std::string_view get_symbol() const { return detail::view_trimmed(symbol); }
+
+        static std::optional<DLCR> parse(const uint8_t* buffer, size_t length) {
+            if (length != SIZE || buffer[0] != static_cast<uint8_t>(TYPE)) {
+                return std::nullopt;
+            }
+            
+            DLCR msg;
+            msg.stock_locate = detail::read_big_endian<uint16_t>(buffer + OFF_STOCK_LOCATE);
+            msg.tracking_number = detail::read_big_endian<uint16_t>(buffer + OFF_TRACKING_NUM);
+            msg.timestamp = detail::read_big_endian<uint64_t>(buffer + OFF_TIMESTAMP);
+            std::memcpy(msg.symbol.data(), buffer + OFF_SYMBOL, 8);
+            msg.open_eligibility_status = buffer[OFF_OPEN_ELIGIBILITY_STATUS];
+            msg.min_allowable_price = detail::read_big_endian<uint32_t>(buffer + OFF_MIN_ALLOWABLE_PRICE);
+            msg.max_allowable_price = detail::read_big_endian<uint32_t>(buffer + OFF_MAX_ALLOWABLE_PRICE);
+            msg.near_execution_price = detail::read_big_endian<uint32_t>(buffer + OFF_NEAR_EXECUTION_PRICE);
+            msg.near_execution_time = detail::read_big_endian<uint64_t>(buffer + OFF_NEAR_EXECUTION_TIME);
+            msg.lower_price_range_collar = detail::read_big_endian<uint32_t>(buffer + OFF_LOWER_PRICE_RANGE_COLLAR);
+            msg.upper_price_range_collar = detail::read_big_endian<uint32_t>(buffer + OFF_UPPER_PRICE_RANGE_COLLAR);
+            return msg;
+        }
+    };
+
     // ============================================================================
     // MESSAGE VARIANT (Type-Safe Dispatch)
     // ============================================================================
@@ -1204,7 +1260,8 @@ namespace hft::itch {
         CrossTrade,
         BrokenTrade,
         NOII,
-        RPII
+        RPII,
+        DLCR
     >;
 
     /// Parse result with error information
@@ -1300,6 +1357,9 @@ namespace hft::itch {
         case MessageType::RPII:
             if (auto msg = RPII::parse(buffer, length)) return ParseResult::ok(ITCHMessage{*msg});
             break;
+        case MessageType::DLCR:
+            if (auto msg = DLCR::parse(buffer, length)) return ParseResult::ok(ITCHMessage{*msg});
+            break;
         default:
             return ParseResult::error(ErrorCode::PARSE_INVALID_TYPE,
                 "Unknown message type: " + std::to_string(buffer[0]));
@@ -1371,7 +1431,8 @@ namespace hft::itch {
                 std::is_same_v<T, IPOQuotingPeriodUpdate> ||
                 std::is_same_v<T, LULDAuctionCollar> ||
                 std::is_same_v<T, NOII> ||
-                std::is_same_v<T, RPII>;
+                std::is_same_v<T, RPII> ||
+                std::is_same_v<T, DLCR>;
             }, msg);
     }
 
