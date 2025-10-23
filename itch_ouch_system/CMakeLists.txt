@@ -127,39 +127,26 @@ target_compile_features(hft_headers INTERFACE cxx_std_20)
 # CORE LIBRARY
 # =============================================================================
 
-# Placeholder for future implementation files
-# As we add .cpp files, they'll be added here
+# List of all implementation files
 set(HFT_CORE_SOURCES
-    # ITCH
-    # src/itch/parser.cpp              # TODO: Phase 2
-    
-    # Order Book
-    # src/book/order_book.cpp          # TODO: Next step
-    
-    # Network
-    # src/network/mold_udp64.cpp       # TODO: Phase 2
-    # src/network/soupbintcp.cpp       # TODO: Phase 3
-    
-    # OUCH
-    # src/ouch/builder.cpp             # TODO: Phase 3
-    
-    # Risk
-    # src/risk/risk_manager.cpp        # TODO: Phase 3
-    
-    # Strategy
-    # src/strategy/market_maker.cpp    # TODO: Phase 4
+    src/book/order_book.cpp
 )
 
-# Only create core library if we have source files
-if(HFT_CORE_SOURCES)
-    add_library(hft_core STATIC ${HFT_CORE_SOURCES})
-    target_link_libraries(hft_core PUBLIC hft_headers)
-    target_link_libraries(hft_core PRIVATE Threads::Threads)
-else()
-    # For now, just use header-only library
-    add_library(hft_core ALIAS hft_headers)
+# Create the core library. If there are no source files, it's a header-only
+# INTERFACE library. If there are source files, it's a STATIC library.
+if(NOT HFT_CORE_SOURCES)
+    add_library(hft_core INTERFACE)
     message(STATUS "No implementation files yet - using header-only library")
+else()
+    add_library(hft_core STATIC ${HFT_CORE_SOURCES})
+    message(STATUS "Building core static library with sources")
 endif()
+
+# All targets that link against hft_core need its include directories
+# and C++20 standard.
+target_link_libraries(hft_core PUBLIC hft_headers)
+target_link_libraries(hft_core PRIVATE Threads::Threads)
+
 
 # =============================================================================
 # SUBDIRECTORIES

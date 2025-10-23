@@ -381,22 +381,22 @@ void test_mwcb_decline_level_all_fields() {
     std::vector<uint8_t> buffer(MWCBDeclineLevel::SIZE, 0);
     buffer[0] = 'V';
     write_be16(buffer, MWCBDeclineLevel::OFF_STOCK_LOCATE, 150);
-    write_be16(buffer, MWCBDeclineLevel::OFF_TRACKING_NUM, 160);
-    write_be48(buffer, MWCBDeclineLevel::OFF_TIMESTAMP, 65000000000000ULL);
-    write_be64(buffer, MWCBDeclineLevel::OFF_LEVEL_1, 30000000000);
-    write_be64(buffer, MWCBDeclineLevel::OFF_LEVEL_2, 29000000000);
-    write_be64(buffer, MWCBDeclineLevel::OFF_LEVEL_3, 28000000000);
+    write_be16(buffer, MWCBDeclineLevel::OFF_TRACKING_NUM, 230);
+    write_be48(buffer, MWCBDeclineLevel::OFF_TIMESTAMP, 60000000000000ULL);
+    write_be64(buffer, MWCBDeclineLevel::OFF_LEVEL1, 100000000);
+    write_be64(buffer, MWCBDeclineLevel::OFF_LEVEL2, 200000000);
+    write_be64(buffer, MWCBDeclineLevel::OFF_LEVEL3, 300000000);
 
     auto result = parse_message(buffer.data(), buffer.size());
     assert(result.is_success());
 
     const auto& msg = std::get<MWCBDeclineLevel>(*result.message);
     assert(msg.stock_locate == 150);
-    assert(msg.tracking_number == 160);
-    assert(msg.timestamp == 65000000000000ULL);
-    assert(msg.level_1 == 30000000000);
-    assert(msg.level_2 == 29000000000);
-    assert(msg.level_3 == 28000000000);
+    assert(msg.tracking_number == 230);
+    assert(msg.timestamp == 60000000000000ULL);
+    assert(msg.level_1 == 100000000);
+    assert(msg.level_2 == 200000000);
+    assert(msg.level_3 == 300000000);
 
     std::cout << "[OK] All MWCBDeclineLevel fields correct\n";
 }

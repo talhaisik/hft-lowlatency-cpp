@@ -53,8 +53,11 @@ add_hft_test(test_itch_messages_comprehensive)
 
 add_hft_test(test_timestamp_debug)
 
-# Order Book (TODO - Next step)
-# add_hft_test(test_order_book)
+# Seqlock Concurrency Test
+add_hft_test(test_seqlock)
+
+# Order Book
+add_hft_test(test_order_book)
 
 # MoldUDP64 (TODO - Phase 2)
 # add_hft_test(test_mold_udp64)

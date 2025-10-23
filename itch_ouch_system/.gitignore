@@ -32,6 +32,7 @@ Makefile
 .project
 .cproject
 .settings/
+CMakeSettings.json
 
 # Test artifacts
 Testing/
@@ -57,6 +58,10 @@ vgcore.*
 *.pcap
 data/*.bin
 !data/sample_*.bin
+
+# Documentation (copyrighted specs)
+*.pdf
+!docs/*.pdf
 
 # Generated files
 *.autosave

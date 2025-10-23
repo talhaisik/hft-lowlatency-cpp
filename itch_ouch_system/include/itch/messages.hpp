@@ -132,7 +132,7 @@ namespace hft::itch {
         MARKET_PARTICIPANT_POSITION = 'L',
         MWCB_DECLINE_LEVEL = 'V',
         MWCB_STATUS = 'W',
-        IPO_QUOTING_PERIOD = 'K',
+        IPO_QUOTING_PERIOD_UPDATE = 'K',
         LULD_AUCTION_COLLAR = 'J',
         OPERATIONAL_HALT = 'h',
 
@@ -170,7 +170,7 @@ namespace hft::itch {
         case MessageType::MARKET_PARTICIPANT_POSITION: return "MARKET_PARTICIPANT_POSITION";
         case MessageType::MWCB_DECLINE_LEVEL: return "MWCB_DECLINE_LEVEL";
         case MessageType::MWCB_STATUS: return "MWCB_STATUS";
-        case MessageType::IPO_QUOTING_PERIOD: return "IPO_QUOTING_PERIOD";
+        case MessageType::IPO_QUOTING_PERIOD_UPDATE: return "IPO_QUOTING_PERIOD_UPDATE";
         case MessageType::LULD_AUCTION_COLLAR: return "LULD_AUCTION_COLLAR";
         case MessageType::OPERATIONAL_HALT: return "OPERATIONAL_HALT";
         case MessageType::ADD_ORDER: return "ADD_ORDER";
@@ -414,6 +414,234 @@ namespace hft::itch {
             std::memcpy(msg.symbol.data(), buffer + OFF_SYMBOL, 8);
             msg.reg_sho_action = buffer[OFF_REG_SHO_ACTION];
 
+            return msg;
+        }
+    };
+
+    /// Market Participant Position (Type 'L') - Length: 26 bytes
+    struct MarketParticipantPosition {
+        static constexpr MessageType TYPE = MessageType::MARKET_PARTICIPANT_POSITION;
+        static constexpr size_t SIZE = 26;
+
+        static constexpr size_t OFF_STOCK_LOCATE = 1;
+        static constexpr size_t OFF_TRACKING_NUM = 3;
+        static constexpr size_t OFF_TIMESTAMP = 5;
+        static constexpr size_t OFF_MPID = 11;
+        static constexpr size_t OFF_SYMBOL = 15;
+        static constexpr size_t OFF_PRIMARY_MARKET_MAKER = 23;
+        static constexpr size_t OFF_MARKET_MAKER_MODE = 24;
+        static constexpr size_t OFF_MARKET_PARTICIPANT_STATE = 25;
+
+        uint16_t stock_locate;
+        uint16_t tracking_number;
+        uint64_t timestamp;
+        std::array<char, 4> mpid;
+        std::array<char, 8> symbol;
+        char primary_market_maker;
+        char market_maker_mode;
+        char market_participant_state;
+
+        std::string_view get_mpid() const { return detail::view_trimmed(mpid); }
+        std::string_view get_symbol() const { return detail::view_trimmed(symbol); }
+
+        static std::optional<MarketParticipantPosition> parse(const uint8_t* buffer, size_t length) {
+            if (length != SIZE || buffer[0] != static_cast<uint8_t>(TYPE)) {
+                return std::nullopt;
+            }
+
+            MarketParticipantPosition msg;
+            msg.stock_locate = detail::read_big_endian<uint16_t>(buffer + OFF_STOCK_LOCATE);
+            msg.tracking_number = detail::read_big_endian<uint16_t>(buffer + OFF_TRACKING_NUM);
+            msg.timestamp = detail::read_be48(buffer + OFF_TIMESTAMP);
+            std::memcpy(msg.mpid.data(), buffer + OFF_MPID, 4);
+            std::memcpy(msg.symbol.data(), buffer + OFF_SYMBOL, 8);
+            msg.primary_market_maker = buffer[OFF_PRIMARY_MARKET_MAKER];
+            msg.market_maker_mode = buffer[OFF_MARKET_MAKER_MODE];
+            msg.market_participant_state = buffer[OFF_MARKET_PARTICIPANT_STATE];
+            return msg;
+        }
+    };
+
+    /// MWCB Decline Level (Type 'V') - Length: 35 bytes
+    struct MWCBDeclineLevel {
+        static constexpr MessageType TYPE = MessageType::MWCB_DECLINE_LEVEL;
+        static constexpr size_t SIZE = 35;
+
+        static constexpr size_t OFF_STOCK_LOCATE = 1;
+        static constexpr size_t OFF_TRACKING_NUM = 3;
+        static constexpr size_t OFF_TIMESTAMP = 5;
+        static constexpr size_t OFF_LEVEL1 = 11;
+        static constexpr size_t OFF_LEVEL2 = 19;
+        static constexpr size_t OFF_LEVEL3 = 27;
+
+        uint16_t stock_locate;
+        uint16_t tracking_number;
+        uint64_t timestamp;
+        uint64_t level1;
+        uint64_t level2;
+        uint64_t level3;
+
+        static std::optional<MWCBDeclineLevel> parse(const uint8_t* buffer, size_t length) {
+            if (length != SIZE || buffer[0] != static_cast<uint8_t>(TYPE)) {
+                return std::nullopt;
+            }
+
+            MWCBDeclineLevel msg;
+            msg.stock_locate = detail::read_big_endian<uint16_t>(buffer + OFF_STOCK_LOCATE);
+            msg.tracking_number = detail::read_big_endian<uint16_t>(buffer + OFF_TRACKING_NUM);
+            msg.timestamp = detail::read_be48(buffer + OFF_TIMESTAMP);
+            msg.level1 = detail::read_big_endian<uint64_t>(buffer + OFF_LEVEL1);
+            msg.level2 = detail::read_big_endian<uint64_t>(buffer + OFF_LEVEL2);
+            msg.level3 = detail::read_big_endian<uint64_t>(buffer + OFF_LEVEL3);
+            return msg;
+        }
+    };
+
+    /// MWCB Status (Type 'W') - Length: 12 bytes
+    struct MWCBStatus {
+        static constexpr MessageType TYPE = MessageType::MWCB_STATUS;
+        static constexpr size_t SIZE = 12;
+
+        static constexpr size_t OFF_STOCK_LOCATE = 1;
+        static constexpr size_t OFF_TRACKING_NUM = 3;
+        static constexpr size_t OFF_TIMESTAMP = 5;
+        static constexpr size_t OFF_BREACHED_LEVEL = 11;
+
+        uint16_t stock_locate;
+        uint16_t tracking_number;
+        uint64_t timestamp;
+        char breached_level;
+
+        static std::optional<MWCBStatus> parse(const uint8_t* buffer, size_t length) {
+            if (length != SIZE || buffer[0] != static_cast<uint8_t>(TYPE)) {
+                return std::nullopt;
+            }
+
+            MWCBStatus msg;
+            msg.stock_locate = detail::read_big_endian<uint16_t>(buffer + OFF_STOCK_LOCATE);
+            msg.tracking_number = detail::read_big_endian<uint16_t>(buffer + OFF_TRACKING_NUM);
+            msg.timestamp = detail::read_be48(buffer + OFF_TIMESTAMP);
+            msg.breached_level = buffer[OFF_BREACHED_LEVEL];
+            return msg;
+        }
+    };
+
+    /// IPO Quoting Period Update (Type 'K') - Length: 28 bytes
+    struct IPOQuotingPeriodUpdate {
+        static constexpr MessageType TYPE = MessageType::IPO_QUOTING_PERIOD_UPDATE;
+        static constexpr size_t SIZE = 28;
+        
+        static constexpr size_t OFF_STOCK_LOCATE = 1;
+        static constexpr size_t OFF_TRACKING_NUM = 3;
+        static constexpr size_t OFF_TIMESTAMP = 5;
+        static constexpr size_t OFF_SYMBOL = 11;
+        static constexpr size_t OFF_IPO_QUOTATION_RELEASE_TIME = 19;
+        static constexpr size_t OFF_IPO_QUOTATION_RELEASE_QUALIFIER = 23;
+        static constexpr size_t OFF_IPO_PRICE = 24;
+
+        uint16_t stock_locate;
+        uint16_t tracking_number;
+        uint64_t timestamp;
+        std::array<char, 8> symbol;
+        uint32_t ipo_quotation_release_time;
+        char ipo_quotation_release_qualifier;
+        uint32_t ipo_price;
+
+        std::string_view get_symbol() const { return detail::view_trimmed(symbol); }
+
+        static std::optional<IPOQuotingPeriodUpdate> parse(const uint8_t* buffer, size_t length) {
+            if (length != SIZE || buffer[0] != static_cast<uint8_t>(TYPE)) {
+                return std::nullopt;
+            }
+
+            IPOQuotingPeriodUpdate msg;
+            msg.stock_locate = detail::read_big_endian<uint16_t>(buffer + OFF_STOCK_LOCATE);
+            msg.tracking_number = detail::read_big_endian<uint16_t>(buffer + OFF_TRACKING_NUM);
+            msg.timestamp = detail::read_be48(buffer + OFF_TIMESTAMP);
+            std::memcpy(msg.symbol.data(), buffer + OFF_SYMBOL, 8);
+            msg.ipo_quotation_release_time = detail::read_big_endian<uint32_t>(buffer + OFF_IPO_QUOTATION_RELEASE_TIME);
+            msg.ipo_quotation_release_qualifier = buffer[OFF_IPO_QUOTATION_RELEASE_QUALIFIER];
+            msg.ipo_price = detail::read_big_endian<uint32_t>(buffer + OFF_IPO_PRICE);
+            return msg;
+        }
+    };
+
+    /// LULD Auction Collar (Type 'J') - Length: 35 bytes
+    struct LULDAuctionCollar {
+        static constexpr MessageType TYPE = MessageType::LULD_AUCTION_COLLAR;
+        static constexpr size_t SIZE = 35;
+
+        static constexpr size_t OFF_STOCK_LOCATE = 1;
+        static constexpr size_t OFF_TRACKING_NUM = 3;
+        static constexpr size_t OFF_TIMESTAMP = 5;
+        static constexpr size_t OFF_SYMBOL = 11;
+        static constexpr size_t OFF_AUCTION_COLLAR_REFERENCE_PRICE = 19;
+        static constexpr size_t OFF_UPPER_COLLAR_PRICE = 23;
+        static constexpr size_t OFF_LOWER_COLLAR_PRICE = 27;
+        static constexpr size_t OFF_AUCTION_COLLAR_EXTENSION = 31;
+
+        uint16_t stock_locate;
+        uint16_t tracking_number;
+        uint64_t timestamp;
+        std::array<char, 8> symbol;
+        uint32_t auction_collar_reference_price;
+        uint32_t upper_collar_price;
+        uint32_t lower_collar_price;
+        uint32_t auction_collar_extension;
+
+        std::string_view get_symbol() const { return detail::view_trimmed(symbol); }
+        
+        static std::optional<LULDAuctionCollar> parse(const uint8_t* buffer, size_t length) {
+            if (length != SIZE || buffer[0] != static_cast<uint8_t>(TYPE)) {
+                return std::nullopt;
+            }
+
+            LULDAuctionCollar msg;
+            msg.stock_locate = detail::read_big_endian<uint16_t>(buffer + OFF_STOCK_LOCATE);
+            msg.tracking_number = detail::read_big_endian<uint16_t>(buffer + OFF_TRACKING_NUM);
+            msg.timestamp = detail::read_be48(buffer + OFF_TIMESTAMP);
+            std::memcpy(msg.symbol.data(), buffer + OFF_SYMBOL, 8);
+            msg.auction_collar_reference_price = detail::read_big_endian<uint32_t>(buffer + OFF_AUCTION_COLLAR_REFERENCE_PRICE);
+            msg.upper_collar_price = detail::read_big_endian<uint32_t>(buffer + OFF_UPPER_COLLAR_PRICE);
+            msg.lower_collar_price = detail::read_big_endian<uint32_t>(buffer + OFF_LOWER_COLLAR_PRICE);
+            msg.auction_collar_extension = detail::read_big_endian<uint32_t>(buffer + OFF_AUCTION_COLLAR_EXTENSION);
+            return msg;
+        }
+    };
+
+    /// Operational Halt (Type 'h') - Length: 21 bytes
+    struct OperationalHalt {
+        static constexpr MessageType TYPE = MessageType::OPERATIONAL_HALT;
+        static constexpr size_t SIZE = 21;
+
+        static constexpr size_t OFF_STOCK_LOCATE = 1;
+        static constexpr size_t OFF_TRACKING_NUM = 3;
+        static constexpr size_t OFF_TIMESTAMP = 5;
+        static constexpr size_t OFF_SYMBOL = 11;
+        static constexpr size_t OFF_MARKET_CODE = 19;
+        static constexpr size_t OFF_OPERATIONAL_HALT_ACTION = 20;
+
+        uint16_t stock_locate;
+        uint16_t tracking_number;
+        uint64_t timestamp;
+        std::array<char, 8> symbol;
+        char market_code;
+        char operational_halt_action;
+
+        std::string_view get_symbol() const { return detail::view_trimmed(symbol); }
+
+        static std::optional<OperationalHalt> parse(const uint8_t* buffer, size_t length) {
+            if (length != SIZE || buffer[0] != static_cast<uint8_t>(TYPE)) {
+                return std::nullopt;
+            }
+
+            OperationalHalt msg;
+            msg.stock_locate = detail::read_big_endian<uint16_t>(buffer + OFF_STOCK_LOCATE);
+            msg.tracking_number = detail::read_big_endian<uint16_t>(buffer + OFF_TRACKING_NUM);
+            msg.timestamp = detail::read_be48(buffer + OFF_TIMESTAMP);
+            std::memcpy(msg.symbol.data(), buffer + OFF_SYMBOL, 8);
+            msg.market_code = buffer[OFF_MARKET_CODE];
+            msg.operational_halt_action = buffer[OFF_OPERATIONAL_HALT_ACTION];
             return msg;
         }
     };
@@ -1060,7 +1288,7 @@ namespace hft::itch {
         case MessageType::TRADE_NON_CROSS:
             if (auto msg = TradeNonCross::parse(buffer, length)) return ParseResult::ok(ITCHMessage{*msg});
             break;
-        case MessageType::CROSS_TRADE:
+        case MessageType::TRADE_CROSS:
             if (auto msg = CrossTrade::parse(buffer, length)) return ParseResult::ok(ITCHMessage{*msg});
             break;
         case MessageType::BROKEN_TRADE:
