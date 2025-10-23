@@ -1,0 +1,94 @@
+# Build directories
+build/
+build-*/
+cmake-build-*/
+out/
+dist/
+
+# Compiled files
+*.o
+*.a
+*.so
+*.dylib
+*.dll
+*.exe
+*.out
+
+# CMake
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+CTestTestfile.cmake
+compile_commands.json
+Makefile
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+*.kate-swp
+.project
+.cproject
+.settings/
+
+# Test artifacts
+Testing/
+*.log
+*.tmp
+test_results/
+
+# Coverage
+*.gcda
+*.gcno
+*.gcov
+coverage/
+*.profdata
+*.profraw
+
+# Valgrind
+*.valgrind
+vgcore.*
+
+# Data files (binary market data)
+*.bin
+*.dat
+*.pcap
+data/*.bin
+!data/sample_*.bin
+
+# Generated files
+*.autosave
+*.bak
+*.orig
+
+# OS files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+Desktop.ini
+
+# Python (if we add Python tools)
+__pycache__/
+*.py[cod]
+*$py.class
+.Python
+venv/
+env/
+.venv
+
+# Documentation build
+docs/_build/
+site/
+
+# Conan
+conanfile.txt.user
+conan.lock
+
+# Vcpkg
+vcpkg_installed/
