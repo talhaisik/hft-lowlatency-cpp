@@ -1,7 +1,7 @@
 # ITCH/OUCH Trading System - Implementation Progress
 
-**Last Updated:** October 23, 2025  
-**Current Phase:** Phase 1 Complete ✅ | Phase 2 (Market Data Networking) Ready to Start
+**Last Updated:** October 25, 2025  
+**Current Phase:** Phase 1 Complete ✅ | Phase 2 (Market Data Networking) In Progress 🚧
 
 ---
 
@@ -149,11 +149,14 @@ itch_ouch_system/
 ├── .gitignore                  # Source control exclusions
 ├── ARCHITECTURE.md             # System design document
 ├── PROGRESS.md                 # Implementation progress tracking
+├── MOLDUDP64_FIXES.md          # MoldUDP64 implementation changelog
 ├── include/
 │   ├── common/
 │   │   └── types.hpp          ✅ Core types and utilities
 │   ├── itch/
 │   │   └── messages.hpp       ✅ ITCH 5.0 message definitions
+│   ├── network/
+│   │   └── moldudp64.hpp      ✅ MoldUDP64 protocol handler
 │   └── book/
 │       ├── seqlock.hpp        ✅ Lock-free SeqLock
 │       └── order_book.hpp     ✅ OrderBook class definition
@@ -164,6 +167,7 @@ itch_ouch_system/
 │   ├── CMakeLists.txt         ✅ Test build configuration
 │   ├── test_itch_messages.cpp ✅ Basic ITCH tests
 │   ├── test_itch_messages_comprehensive.cpp ✅ Full ITCH coverage
+│   ├── test_moldudp64.cpp     ✅ MoldUDP64 comprehensive tests
 │   ├── test_seqlock.cpp       ✅ SeqLock correctness tests
 │   └── test_order_book.cpp    ✅ OrderBook comprehensive tests
 ├── benchmarks/                 # (Future: Performance benchmarks)
@@ -209,7 +213,7 @@ itch_ouch_system/
 
 ---
 
-## Phase 2: Market Data Networking ⬜ READY TO START
+## Phase 2: Market Data Networking 🚧 IN PROGRESS
 
 ### Component Overview
 
@@ -218,90 +222,118 @@ The Market Data Networking layer handles the reception and processing of ITCH me
 ### Goals
 
 **Functionality:**
-- Unwrap MoldUDP64 packets containing ITCH messages
-- Detect sequence gaps and request retransmits
-- Buffer out-of-order messages
-- Handle UDP multicast feeds
-- Integrate with existing ITCH parser and OrderBook
+- ✅ Unwrap MoldUDP64 packets containing ITCH messages
+- ✅ Detect sequence gaps and request retransmits (gap info provided)
+- ⬜ Buffer out-of-order messages (TODO Phase 2b)
+- ⬜ Handle UDP multicast feeds (socket layer)
+- ⬜ Integrate with existing ITCH parser and OrderBook
 
 **Performance:**
-- < 1 μs per packet processing
-- Handle 100K+ messages/second sustained
-- Zero packet drops at target rate
-- Efficient gap detection and recovery
+- < 1 μs per packet processing - **Target, not yet benchmarked**
+- Handle 100K+ messages/second sustained - **Target, not yet tested**
+- Zero packet drops at target rate - **Target**
+- Efficient gap detection and recovery - **Implemented, not yet profiled**
 
-### Planned Implementation
+---
 
-#### MoldUDP64 Handler
+### ✅ COMPLETED: MoldUDP64 Protocol Handler (`include/network/moldudp64.hpp`)
 
-**Packet Structure:**
+**Status:** ✅ Production-ready, frozen API (October 25, 2025)
+
+#### What It Provides
+
+**Core Functionality:**
+- Zero-copy MoldUDP64 packet parsing (NASDAQ's UDP multicast transport)
+- Sequence gap detection with retransmit information (gap_start + gap_count)
+- Session rollover detection and tracking
+- Heartbeat and end-of-session packet handling
+- Out-of-order packet detection
+- Per-message sequence number assignment
+
+**Key Structures:**
 ```cpp
-struct MoldUDP64Packet {
-    uint64_t session_id;
-    uint64_t sequence_number;
-    uint16_t message_count;
-    uint16_t message_length;
-    char messages[];  // Variable length ITCH messages
+// MoldUDP64 packet header (20 bytes)
+struct MoldUDP64Header {
+    std::array<char, 10> session;      // Session ID (ASCII)
+    uint64_t sequence_number;          // Big-endian, first message seq
+    uint16_t message_count;            // Big-endian, 0=heartbeat, 0xFFFF=EOS
+};
+
+// Extracted message block (zero-copy)
+struct MessageBlock {
+    uint16_t length;                   // Message length
+    const uint8_t* data;               // Pointer into UDP buffer (zero-copy!)
+    uint64_t sequence;                 // Absolute MoldUDP64 sequence number
+};
+
+// Gap detection result
+struct GapInfo {
+    bool has_gap;                      // True if gap detected
+    bool out_of_order;                 // True if packet arrived late
+    bool session_changed;              // True if session ID changed
+    uint64_t gap_start;                // First missing sequence
+    uint64_t gap_count;                // Number of missing messages
 };
 ```
 
-**Key Features:**
-- Session identification and validation
-- Sequence number tracking per session
-- Gap detection and retransmit requests
-- Message extraction and forwarding
+**Features:**
+- ✅ Spec-compliant MoldUDP64 downstream packet parsing
+- ✅ Heartbeat packets (count=0) with "next expected" sequence
+- ✅ End-of-session packets (count=0xFFFF) detection
+- ✅ Session rollover handling (prevents cross-session gaps)
+- ✅ Per-message sequence numbers for downstream ITCH parsing
+- ✅ Zero-copy message extraction (pointers into UDP buffer)
+- ✅ Comprehensive bounds checking (no buffer overruns)
+- ✅ `[[nodiscard]]` annotations for safety
+- ✅ 7 metrics TODOs for production observability
 
-#### UDP Feed Handler
+**Design Decisions:**
+- **Zero-copy:** `MessageBlock::data` points directly into UDP buffer for minimal latency
+- **Lifetime safety:** Explicit warnings that `MessageBlock` is only valid while buffer lives
+- **Session normalization:** Trims trailing spaces/NULs, preserves internal spaces
+- **Gap semantics:** Returns (gap_start, gap_count) for retransmit requests
+- **Malformed packets:** Dropped packets trigger gaps (intentional, for retransmit)
 
-**Design:**
-- File replay mode for testing and validation
-- UDP multicast support for live feeds
-- Configurable buffer sizes and timeouts
-- Integration with OrderBook for real-time updates
+**Test Coverage:**
+- ✅ 17 comprehensive tests (all passing)
+- ✅ Header parsing (valid, truncated, edge cases)
+- ✅ Heartbeat and end-of-session packets
+- ✅ Single and multiple message packets
+- ✅ Sequence tracking (initialization, gaps, no gaps)
+- ✅ Session rollover (no underflow, session_changed flag)
+- ✅ Out-of-order packet detection
+- ✅ Session ID variations (internal spaces preserved)
+
+**Performance Characteristics:**
+- Zero-copy message extraction (pointers, not copies)
+- Pre-allocated vector capacity (no realloc in hot path)
+- Compile-time endianness detection (`if constexpr`)
+- Bounds checking with early exit
+- Target: < 1 μs per packet - **Not yet benchmarked**
+
+**Review History:**
+- 6 rounds of detailed code reviews
+- Critical bug fix: `normalize_session()` now trims trailing (not first) space
+- API improvements: `[[nodiscard]]`, `session_changed` flag, `carries_data()` helper
+- Observability: 7 metrics TODOs for production dashboards
+
+**Files:**
+- `include/network/moldudp64.hpp` (537 lines, header-only)
+- `tests/test_moldudp64.cpp` (550 lines, comprehensive)
+- `MOLDUDP64_FIXES.md` (detailed changelog of all fixes)
 
 ---
-1. Store order in tracking map
-2. Calculate price index
-3. Increment quantity at price level
-4. Update best bid/ask if needed
-5. Update seqlock with new top-of-book
 
-**Execute Order:**
-1. Lookup order in tracking map
-2. Calculate price index
-3. Decrement quantity at price level
-4. Update order filled quantity
-5. Update best bid/ask if level depleted
-6. Update seqlock
+### ⬜ TODO: UDP Multicast Socket Layer
 
-**Cancel/Delete Order:**
-1. Lookup order in tracking map
-2. Calculate price index
-3. Decrement quantity at price level
-4. Remove/update order in tracking map
-5. Update best bid/ask if needed
-6. Update seqlock
+**Planned Features:**
+- UDP multicast socket setup and configuration
+- Receive buffer management
+- Integration with MoldUDP64 parser
+- File replay mode for testing
+- Retransmit request handling (unicast TCP)
 
-**Replace Order:**
-1. Delete old order (as above)
-2. Add new order (as above)
-
-### Implementation Plan
-
-**Files to Create:**
-1. `include/book/seqlock.hpp` - Lock-free seqlock implementation
-2. `include/book/order_book.hpp` - Order book class definition
-3. `src/book/order_book.cpp` - Order book implementation
-4. `tests/test_order_book.cpp` - Comprehensive test suite
-5. `tests/test_seqlock.cpp` - Seqlock correctness tests
-
-**Testing Strategy:**
-1. Unit tests for each operation
-2. Order book integrity validation (sum of quantities)
-3. Best bid/ask tracking accuracy
-4. Concurrent reader test (if multi-threaded)
-5. Performance benchmarks
-6. Replay historical ITCH data
+**Not Yet Started**
 
 ---
 

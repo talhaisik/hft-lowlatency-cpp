@@ -59,8 +59,8 @@ add_hft_test(test_seqlock)
 # Order Book
 add_hft_test(test_order_book)
 
-# MoldUDP64 (TODO - Phase 2)
-# add_hft_test(test_mold_udp64)
+# MoldUDP64 (Phase 2 - Network Layer)
+add_hft_test(test_moldudp64)
 
 # OUCH Builder (TODO - Phase 3)
 # add_hft_test(test_ouch_builder)
