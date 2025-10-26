@@ -33,6 +33,26 @@ namespace hft::itch {
     } // namespace protocol
 
     // ============================================================================
+    // TIMESTAMP SEMANTICS
+    // ============================================================================
+    //
+    // All ITCH 5.0 messages contain a 48-bit (6-byte) timestamp field representing
+    // nanoseconds since midnight (00:00:00.000000000).
+    //
+    // Wire format: 6 bytes, big-endian, at offset 5 in most messages
+    // In-memory:   uint64_t (upper 16 bits always zero)
+    // Range:       0 to 86,399,999,999,999 (23:59:59.999999999)
+    // Rollover:    Resets to 0 at midnight (session boundary)
+    //
+    // Usage notes:
+    // - Use for message sequencing within a trading day
+    // - Delta calculations valid only within same session
+    // - For cross-session replay, track session date separately
+    // - Monotonic within a session (except for retransmits)
+    //
+    // ============================================================================
+
+    // ============================================================================
     // ENDIAN CONVERSION UTILITIES
     // ============================================================================
 
@@ -75,7 +95,7 @@ namespace hft::itch {
         }
 
         /// Read 48-bit big-endian timestamp (6 bytes) into uint64_t
-        /// ITCH 5.0 uses 48-bit timestamps (nanoseconds since midnight)
+        /// See TIMESTAMP SEMANTICS section above for field interpretation
         inline uint64_t read_be48(const uint8_t* buffer) {
             uint64_t value = 0;
             value |= static_cast<uint64_t>(buffer[0]) << 40;
@@ -208,8 +228,8 @@ namespace hft::itch {
         static constexpr size_t OFF_EVENT_CODE    = 11;
 
         uint16_t stock_locate;      // Offset 1-2
-        uint16_t tracking_number;   // Offset 3-4
-        uint64_t timestamp;         // Offset 5-10 (nanoseconds since midnight)
+        uint16_t tracking_number;
+        uint64_t timestamp;         // 48-bit (6 bytes on wire)
         char event_code;            // Offset 11
 
         // Event codes
@@ -268,8 +288,8 @@ namespace hft::itch {
 
         uint16_t stock_locate;
         uint16_t tracking_number;
-        uint64_t timestamp;         // 6 bytes in protocol
-        std::array<char, 8> symbol;         // 8 bytes (right-padded)
+        uint64_t timestamp;          // 48-bit (6 bytes on wire)
+        std::array<char, 8> symbol;  // 8 bytes (right-padded)
         char market_category;
         char financial_status;
         uint32_t round_lot_size;
@@ -334,7 +354,7 @@ namespace hft::itch {
 
         uint16_t stock_locate;
         uint16_t tracking_number;
-        uint64_t timestamp;
+        uint64_t timestamp;         // 48-bit (6 bytes on wire)
         std::array<char, 8> symbol;         // 8 bytes
         char trading_state;
         char reserved;
@@ -388,7 +408,7 @@ namespace hft::itch {
 
         uint16_t stock_locate;
         uint16_t tracking_number;
-        uint64_t timestamp;
+        uint64_t timestamp;         // 48-bit (6 bytes on wire)
         std::array<char, 8> symbol;         // 8 bytes
         char reg_sho_action;
 
@@ -438,7 +458,7 @@ namespace hft::itch {
 
         uint16_t stock_locate;
         uint16_t tracking_number;
-        uint64_t timestamp;
+        uint64_t timestamp;         // 48-bit (6 bytes on wire)
         std::array<char, 4> mpid;
         std::array<char, 8> symbol;
         char primary_market_maker;
@@ -480,7 +500,7 @@ namespace hft::itch {
 
         uint16_t stock_locate;
         uint16_t tracking_number;
-        uint64_t timestamp;
+        uint64_t timestamp;         // 48-bit (6 bytes on wire)
         uint64_t level1;
         uint64_t level2;
         uint64_t level3;
@@ -513,7 +533,7 @@ namespace hft::itch {
 
         uint16_t stock_locate;
         uint16_t tracking_number;
-        uint64_t timestamp;
+        uint64_t timestamp;         // 48-bit (6 bytes on wire)
         char breached_level;
 
         static std::optional<MWCBStatus> parse(const uint8_t* buffer, size_t length) {
@@ -545,7 +565,7 @@ namespace hft::itch {
 
         uint16_t stock_locate;
         uint16_t tracking_number;
-        uint64_t timestamp;
+        uint64_t timestamp;         // 48-bit (6 bytes on wire)
         std::array<char, 8> symbol;
         uint32_t ipo_quotation_release_time;
         char ipo_quotation_release_qualifier;
@@ -586,7 +606,7 @@ namespace hft::itch {
 
         uint16_t stock_locate;
         uint16_t tracking_number;
-        uint64_t timestamp;
+        uint64_t timestamp;         // 48-bit (6 bytes on wire)
         std::array<char, 8> symbol;
         uint32_t auction_collar_reference_price;
         uint32_t upper_collar_price;
@@ -627,7 +647,7 @@ namespace hft::itch {
 
         uint16_t stock_locate;
         uint16_t tracking_number;
-        uint64_t timestamp;
+        uint64_t timestamp;         // 48-bit (6 bytes on wire)
         std::array<char, 8> symbol;
         char market_code;
         char operational_halt_action;
@@ -670,7 +690,7 @@ namespace hft::itch {
 
         uint16_t stock_locate;
         uint16_t tracking_number;
-        uint64_t timestamp;
+        uint64_t timestamp;         // 48-bit (6 bytes on wire)
         uint64_t order_reference;   // Unique order ID
         char buy_sell_indicator;    // 'B' or 'S'
         uint32_t shares;
@@ -725,7 +745,7 @@ namespace hft::itch {
 
         uint16_t stock_locate;
         uint16_t tracking_number;
-        uint64_t timestamp;
+        uint64_t timestamp;         // 48-bit (6 bytes on wire)
         uint64_t order_reference;
         char buy_sell_indicator;
         uint32_t shares;
@@ -786,7 +806,7 @@ namespace hft::itch {
 
         uint16_t stock_locate;
         uint16_t tracking_number;
-        uint64_t timestamp;
+        uint64_t timestamp;         // 48-bit (6 bytes on wire)
         uint64_t order_reference;
         uint32_t executed_shares;
         uint64_t match_number;      // Unique trade ID
@@ -824,7 +844,7 @@ namespace hft::itch {
 
         uint16_t stock_locate;
         uint16_t tracking_number;
-        uint64_t timestamp;
+        uint64_t timestamp;         // 48-bit (6 bytes on wire)
         uint64_t order_reference;
         uint32_t executed_shares;
         uint64_t match_number;
@@ -867,7 +887,7 @@ namespace hft::itch {
 
         uint16_t stock_locate;
         uint16_t tracking_number;
-        uint64_t timestamp;
+        uint64_t timestamp;         // 48-bit (6 bytes on wire)
         uint64_t order_reference;
         uint32_t cancelled_shares;
 
@@ -899,7 +919,7 @@ namespace hft::itch {
 
         uint16_t stock_locate;
         uint16_t tracking_number;
-        uint64_t timestamp;
+        uint64_t timestamp;         // 48-bit (6 bytes on wire)
         uint64_t order_reference;
 
         static std::optional<OrderDelete> parse(const uint8_t* buffer, size_t length) {
@@ -932,7 +952,7 @@ namespace hft::itch {
 
         uint16_t stock_locate;
         uint16_t tracking_number;
-        uint64_t timestamp;
+        uint64_t timestamp;         // 48-bit (6 bytes on wire)
         uint64_t original_order_reference;
         uint64_t new_order_reference;
         uint32_t shares;
@@ -981,7 +1001,7 @@ namespace hft::itch {
 
         uint16_t stock_locate;
         uint16_t tracking_number;
-        uint64_t timestamp;
+        uint64_t timestamp;         // 48-bit (6 bytes on wire)
         uint64_t order_reference;
         char buy_sell_indicator;
         uint32_t shares;
@@ -1037,7 +1057,7 @@ namespace hft::itch {
 
         uint16_t stock_locate;
         uint16_t tracking_number;
-        uint64_t timestamp;
+        uint64_t timestamp;         // 48-bit (6 bytes on wire)
         uint64_t shares;
         std::array<char, 8> symbol;
         uint32_t cross_price;
@@ -1076,7 +1096,7 @@ namespace hft::itch {
 
         uint16_t stock_locate;
         uint16_t tracking_number;
-        uint64_t timestamp;
+        uint64_t timestamp;         // 48-bit (6 bytes on wire)
         uint64_t match_number;      // Trade to break
 
         static std::optional<BrokenTrade> parse(const uint8_t* buffer, size_t length) {
@@ -1114,7 +1134,7 @@ namespace hft::itch {
 
         uint16_t stock_locate;
         uint16_t tracking_number;
-        uint64_t timestamp;
+        uint64_t timestamp;         // 48-bit (6 bytes on wire)
         uint64_t paired_shares;
         uint64_t imbalance_shares;
         char imbalance_direction;
@@ -1162,7 +1182,7 @@ namespace hft::itch {
 
         uint16_t stock_locate;
         uint16_t tracking_number;
-        uint64_t timestamp;
+        uint64_t timestamp;         // 48-bit (6 bytes on wire)
         std::array<char, 8> symbol;
         char interest_flag;
 
@@ -1202,7 +1222,7 @@ namespace hft::itch {
 
         uint16_t stock_locate;
         uint16_t tracking_number;
-        uint64_t timestamp;
+        uint64_t timestamp;         // 48-bit (6 bytes on wire)
         std::array<char, 8> symbol;
         char open_eligibility_status;  // 'N' = Not Eligible, 'Y' = Eligible
         uint32_t min_allowable_price;  // 20% below Registration Statement Lower Price
@@ -1222,7 +1242,7 @@ namespace hft::itch {
             DLCR msg;
             msg.stock_locate = detail::read_big_endian<uint16_t>(buffer + OFF_STOCK_LOCATE);
             msg.tracking_number = detail::read_big_endian<uint16_t>(buffer + OFF_TRACKING_NUM);
-            msg.timestamp = detail::read_big_endian<uint64_t>(buffer + OFF_TIMESTAMP);
+            msg.timestamp = detail::read_be48(buffer + OFF_TIMESTAMP);  // 6 bytes (48-bit)
             std::memcpy(msg.symbol.data(), buffer + OFF_SYMBOL, 8);
             msg.open_eligibility_status = buffer[OFF_OPEN_ELIGIBILITY_STATUS];
             msg.min_allowable_price = detail::read_big_endian<uint32_t>(buffer + OFF_MIN_ALLOWABLE_PRICE);
@@ -1364,6 +1384,10 @@ namespace hft::itch {
             return ParseResult::error(ErrorCode::PARSE_INVALID_TYPE,
                 "Unknown message type: " + std::to_string(buffer[0]));
         }
+        
+        // If we reach here, the message type was recognized but parsing failed
+        return ParseResult::error(ErrorCode::PARSE_INVALID_SIZE,
+            "Message type " + std::to_string(buffer[0]) + " failed to parse (invalid size or format)");
     }
 
     // ============================================================================
