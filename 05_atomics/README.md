@@ -174,13 +174,13 @@ locked.store(false, std::memory_order_release);
 ## 📊 Performance Results (Example Hardware)
 
 **Single-threaded operations (x86-64, 4.0 GHz):**
-| Operation | Memory Order | ns/op | Speedup vs seq_cst |
-|-----------|-------------|-------|-------------------|
-| `store()` | `relaxed` | 1.0 | **20x faster** |
-| `store()` | `release` | 1.0 | **20x faster** |
-| `store()` | `seq_cst` | 18.5 | 1x (baseline) |
-| `fetch_add()` | `relaxed` | 2.3 | **10x faster** |
-| `fetch_add()` | `seq_cst` | 25.0 | 1x (baseline) |
+| Operation     | Memory Order | ns/op | Speedup vs seq_cst |
+|---------------|--------------|-------|--------------------|
+| `store()`     | `relaxed`    | 1.0   | **20x faster**     |
+| `store()`     | `release`    | 1.0   | **20x faster**     |
+| `store()`     | `seq_cst`    | 18.5  | 1x (baseline)      |
+| `fetch_add()` | `relaxed`    | 2.3   | **10x faster**     |
+| `fetch_add()` | `seq_cst`    | 25.0  | 1x (baseline)      |
 
 **False sharing impact:**
 - Without padding: 8.2M ops/sec
@@ -212,52 +212,10 @@ int val = x;  // Undefined behavior!
 int val = x.load(std::memory_order_relaxed);  // OK
 ```
 
-## 🎓 Next Steps
+## Next Steps
 
 After mastering this module, you're ready for:
 1. **Memory Barriers & Fences** - Explicit synchronization
 2. **ABA Problem** - Understanding CAS pitfalls
 3. **Hazard Pointers** - Safe memory reclamation
 4. **MPSC/MPMC Queues** - Advanced lock-free structures
-
-## 📖 Resources
-
-- **C++ Reference:** https://en.cppreference.com/w/cpp/atomic
-- **Preshing on Programming:** https://preshing.com/archives/
-- **Herb Sutter's "atomic Weapons"** - CppCon talks
-- **"C++ Concurrency in Action"** - Anthony Williams (Chapters 5-7)
-
-## 🐛 Debugging Tips
-
-### Use ThreadSanitizer (TSAN)
-```bash
-# Compile with TSAN
-g++ -fsanitize=thread -g atomic_demo.cpp -pthread
-
-# Run and detect data races
-./a.out
-```
-
-### Examine Generated Assembly
-```bash
-# See what the compiler generates
-g++ -S -masm=intel -O3 atomic_examples.cpp
-
-# Look for:
-# - LOCK prefix (atomics)
-# - MFENCE (seq_cst barriers)
-# - MOV vs LOCK CMPXCHG
-```
-
-## 💡 Pro Tips
-
-1. **Start with `seq_cst`**, optimize to relaxed only after profiling
-2. **Always pad hot atomics** to 64 bytes (cache line size)
-3. **Use two-phase spinlocks** to reduce contention
-4. **Benchmark on target hardware** (x86 vs ARM behave differently)
-5. **Use TSAN** during development to catch races early
-
----
-
-**Ready to master atomics?** Start with the demo, then dive into the documentation!
-

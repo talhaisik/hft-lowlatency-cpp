@@ -1,10 +1,10 @@
 ﻿# Modern C++ Exploration: HFT and Low-Latency Systems
 
-## 🔬 Project Overview
+## Project Overview
 
 This repository serves as a personal deep-dive into modern C++ techniques, specifically explored through the lens of high-frequency trading (HFT) and low-latency system design. It's a hands-on learning journey exploring performance-critical programming concepts.
 
-## 🎯 Learning Objectives
+## Learning Objectives
 
 - Master performance-critical C++ idioms
 - Understand low-latency system design
@@ -13,7 +13,7 @@ This repository serves as a personal deep-dive into modern C++ techniques, speci
 - Implement lock-free data structures
 - Benchmark and optimize C++ code
 
-## 📚 Study Areas
+## Study Areas
 
 ### Key Focus Domains
 - Modern C++ Language Features
@@ -23,7 +23,7 @@ This repository serves as a personal deep-dive into modern C++ techniques, speci
 - Low-Latency Algorithm Design
 - Systems Programming Techniques
 
-## 🗺 Exploration Roadmap
+## Exploration Roadmap
 
 ### Phase 1: Modern C++ Foundations
 **Goal:** Master C++20 language features and RAII patterns
@@ -150,7 +150,7 @@ This repository serves as a personal deep-dive into modern C++ techniques, speci
 - [ ] Error Handling Without Exceptions
 - [ ] Configuration-Driven Design
 
-## 🛠 Technical Approach
+## Technical Approach
 
 ### Guiding Principles
 - **Minimal Abstractions**: Zero-overhead design
@@ -158,7 +158,7 @@ This repository serves as a personal deep-dive into modern C++ techniques, speci
 - **Modern C++**: Leveraging C++20/C++23 features
 - **Educational Focus**: Clear, commented implementations
 
-## 🏗 Project Structure
+## Project Structure
 
 ```
 hft-lowlatency-cpp/
@@ -212,7 +212,7 @@ hft-lowlatency-cpp/
 └── (Future Modules)
 ```
 
-## 🚀 Build Instructions
+## Build Instructions
 
 ### Prerequisites
 - CMake 3.20+
@@ -239,7 +239,7 @@ cmake -G "Visual Studio 17 2022" ..
 cmake --build . --config Release
 ```
 
-## 🤔 Why This Approach?
+## Why This Approach?
 
 This repository is not a production trading system, but a systematic exploration of:
 - How modern C++ can achieve extreme performance
@@ -247,7 +247,7 @@ This repository is not a production trading system, but a systematic exploration
 - Low-level system design principles
 - Performance optimization strategies
 
-## 📊 Performance Philosophy
+## Performance Philosophy
 
 - **Goal**: Understanding, not absolute speed
 - **Method**: Clear, educational implementations

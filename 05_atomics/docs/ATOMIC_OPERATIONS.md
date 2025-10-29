@@ -1,6 +1,6 @@
 # Atomic Operations Deep Dive
 
-## 🎯 Learning Objectives
+## Learning Objectives
 
 After completing this module, you will understand:
 - What atomics are and why they're needed
@@ -12,7 +12,7 @@ After completing this module, you will understand:
 
 ---
 
-## 📚 What Are Atomic Operations?
+## What Are Atomic Operations?
 
 ### The Problem: Non-Atomic Operations
 
@@ -69,7 +69,7 @@ The `LOCK` prefix ensures:
 
 ---
 
-## 🧠 CPU Architecture & Memory Visibility
+## CPU Architecture & Memory Visibility
 
 ### The Memory Hierarchy
 
@@ -125,7 +125,7 @@ y.store(1);                      assert(y.load() == 1);  // Can fail!
 
 ---
 
-## 🔢 Memory Ordering: The Six Flavors
+## Memory Ordering: The Six Flavors
 
 C++ provides 6 memory orderings (from weakest to strongest):
 
@@ -281,7 +281,7 @@ int r1 = y.load(seq_cst); int r2 = x.load(seq_cst);
 
 ---
 
-## 🎯 Choosing the Right Memory Ordering
+## Choosing the Right Memory Ordering
 
 ### Decision Tree
 
@@ -326,7 +326,7 @@ int r1 = y.load(seq_cst); int r2 = x.load(seq_cst);
 
 ---
 
-## ⚡ Performance Comparison (x86-64)
+## Performance Comparison (x86-64)
 
 | Operation                 | Memory Order | Cycles | Notes                   |
 |---------------------------|--------------|--------|-------------------------|
@@ -354,7 +354,7 @@ int r1 = y.load(seq_cst); int r2 = x.load(seq_cst);
 
 ---
 
-## 🔍 Common Atomic Operations
+## Common Atomic Operations
 
 ### 1. Load & Store
 
@@ -394,46 +394,164 @@ counter += 5;  // Equivalent to fetch_add with seq_cst
 
 **The most important atomic operation for lock-free programming!**
 
+Let's break this down into four key points:
+
+1. What `compare_exchange_*` actually does
+2. The difference between `weak` and `strong`
+3. How to write the standard retry loop
+4. Why the failure memory order is usually weaker
+
+#### 4.1. What `compare_exchange_*` does
+
+Say you have:
+
 ```cpp
-std::atomic<int> x{10};
-
+std::atomic<int> x = 10;
 int expected = 10;
-int desired = 20;
-
-// Atomically:
-// if (x == expected) {
-//     x = desired;
-//     return true;
-// } else {
-//     expected = x;  // Update expected!
-//     return false;
-// }
-bool success = x.compare_exchange_weak(
-    expected, desired,
-    std::memory_order_acq_rel
-);
+bool ok = x.compare_exchange_weak(expected, 20,
+                                  std::memory_order_acq_rel,
+                                  std::memory_order_relaxed);
 ```
 
-**Weak vs Strong:**
-- `compare_exchange_weak`: Can **spuriously fail** (faster, use in loops)
-- `compare_exchange_strong`: Never spuriously fails (use when retrying is expensive)
+Conceptually this means:
 
-**Usage Pattern:**
+* Check if `x` currently equals `expected`.
+  * If yes: write `20` into `x`, return `true`.
+  * If no: don't change `x`, return `false`.
+
+But there's a twist almost everyone forgets:
+
+* If the comparison fails (meaning `x` was not equal to `expected`), then the function will **update your `expected` variable** to whatever `x` actually was.
+
+That is: after a failure, `expected` now holds the current value in the atomic. You do not have to load `x` again yourself - the CAS already told you what the new value is.
+
+So the typical retry loop looks like:
+
 ```cpp
-// Typical CAS loop
-int expected = x.load(std::memory_order_relaxed);
-while (!x.compare_exchange_weak(
-    expected, expected + 1,
-    std::memory_order_acq_rel,
-    std::memory_order_relaxed  // Ordering on failure
-)) {
-    // expected was updated by CAS, retry
+int expected = oldValue;
+while (!x.compare_exchange_weak(expected, desired,
+                                success_order,
+                                failure_order)) {
+    // here: expected has been updated to x's current value
+    desired = compute_new_desired_from(expected);
 }
 ```
 
+You keep retrying until you successfully install the new value.
+
+#### 4.2. `compare_exchange_weak` vs `compare_exchange_strong`
+
+Both forms behave the same logically, **except for spurious failure**:
+
+* `compare_exchange_strong`
+  * Only fails if the comparison `x == expected` was actually false.
+  * In other words: if `x` really was equal to `expected`, `strong` will not lie to you and say "nope."
+  * Tends to generate slightly heavier code on some architectures.
+
+* `compare_exchange_weak`
+  * Is allowed to "spuriously fail."
+  * That means it can return `false` even if `x` was equal to `expected`. Nothing was wrong; it just didn't commit.
+  * Why? On some architectures (notably ARM), allowing that gives the compiler/CPU cheaper, more relaxed atomic instructions that don't need to force a stronger compare-and-swap loop in hardware.
+  * Because of this, `weak` is typically cheaper per attempt.
+
+Important: Spurious failure does **not** corrupt data. It just means "try again." It's a performance trade.
+
+So:
+
+* `weak` may require you to loop anyway.
+* `strong` is sometimes used in code that doesn't want an inner retry, but honestly, in practice you're almost always looping anyway for lock-free structures, so `weak` is idiomatic there.
+
+#### 4.3. How you write the canonical CAS loop
+
+This is the typical pattern used to update an atomic based on its current value:
+
+```cpp
+std::atomic<int> x = 0;
+
+void increment() {
+    int expected = x.load(std::memory_order_relaxed);
+    for (;;) {
+        int desired = expected + 1;
+        // Try to replace expected with desired
+        if (x.compare_exchange_weak(expected,         // expected (in/out)
+                                    desired,          // desired (what we want to write)
+                                    std::memory_order_acq_rel,   // success ordering
+                                    std::memory_order_relaxed)) // failure ordering
+        {
+            // success
+            break;
+        }
+        // failure:
+        // - expected has been overwritten with the *current* x
+        // - loop and try again with new expected
+    }
+}
+```
+
+Walkthrough of that loop:
+
+1. `expected` holds what we think `x` is.
+2. We compute the new value (`desired`) we'd like to store.
+3. We call `compare_exchange_weak`.
+   * If it succeeds:
+     * `x` is now updated to `desired`.
+     * We break.
+   * If it fails:
+     * That means someone else updated `x` before we did, or we hit a spurious fail.
+     * `expected` now contains the up-to-date value of `x`.
+     * We loop and try again using that new `expected`.
+
+This pattern is how you build lock-free counters, stacks, queues, etc.
+
+Why `weak` in the loop? Because spurious failure is fine - we're looping anyway, so we just retry. On some platforms it's faster than `strong` for that inner attempt.
+
+#### 4.4. Why two memory orders: success and failure
+
+Notice that `compare_exchange_weak` and `compare_exchange_strong` both take **two** memory order arguments:
+
+```cpp
+compare_exchange_weak(expected, desired,
+                      success_order,
+                      failure_order);
+```
+
+Why two?
+
+Because on success, you are performing a read-modify-write that usually participates in synchronization. On failure, you're just doing a read (and telling me what the current value was). Those two cases need different ordering strength.
+
+* **Success case**: You actually changed shared state. You might be publishing something (so you need `release` semantics), or consuming something (so you need `acquire` semantics), or both (so `acq_rel`). Or maybe you want `seq_cst`. This is usually the "real" synchronization point in your lock-free algorithm.
+
+* **Failure case**: You didn't update anything. You just learned "here's the new value I found instead." That is often just an observation, not a publish/consume point. You usually don't need full acquire/release there. So people pass `memory_order_relaxed` or `memory_order_acquire` on failure, depending on what they're doing.
+
+A very common set is:
+
+* `std::memory_order_acq_rel` (or `std::memory_order_seq_cst` if you're keeping it simple) on success
+* `std::memory_order_relaxed` on failure
+
+Why is failure allowed to be weaker? Because on failure you did not "win," so you're not the thread that made the officially visible update. You don't need to force a heavy fence in that losing path. That can matter in tight retry loops, where failure is common under contention.
+
+#### 4.5. When would you prefer `compare_exchange_strong`?
+
+Typical reasons:
+
+* You're on an architecture where `weak` and `strong` compile to basically the same thing, so you just use `strong` for clarity.
+* You're writing code where you really only want one attempt (say, in some validation path where if it fails once, you'll give up rather than retry). With `strong`, you won't get a spurious fail on a correct match, so a single attempt is meaningful.
+
+But in most classic lock-free data structures, we assume we might have to retry anyway because of real contention, so `weak` is the default.
+
+#### Summary
+
+* Both `compare_exchange_weak` and `compare_exchange_strong` are "CAS": "If `*this == expected`, write `desired` and say success; otherwise fail and update `expected` to the actual value."
+
+* The only semantic difference: `weak` is allowed to fail spuriously (return false even though the values matched), which can map to cheaper hardware instructions on some CPUs. `strong` is not allowed to do that.
+
+* Because `weak` can spuriously fail, you almost always wrap it in a loop that keeps retrying until success.
+
+* You pass **two memory orders**: one for success (often `acq_rel` or `seq_cst`), and one weaker for failure (often `relaxed`), because failure is just "I lost, tell me the latest value," not a publish point.
+
 ---
 
-## 🚨 Common Pitfalls
+## Common Pitfalls
 
 ### 1. Using Relaxed for Synchronization
 
@@ -483,7 +601,7 @@ for (int i = 0; i < 1000000; i++) {
 
 ---
 
-## 📊 Real-World Example: Spinlock
+## Real-World Example: Spinlock
 
 ```cpp
 class Spinlock {
@@ -514,7 +632,7 @@ public:
 
 ---
 
-## 🎓 Next Steps
+## Next Steps
 
 After mastering atomics, you're ready for:
 1. **Memory Barriers & Fences** - Explicit synchronization

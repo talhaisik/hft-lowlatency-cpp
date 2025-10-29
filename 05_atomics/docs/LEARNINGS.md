@@ -1,6 +1,6 @@
 # Atomic Operations: Key Learnings & Insights
 
-## 🎯 What We Built
+## What We Built
 
 This module provides a comprehensive deep-dive into C++ atomic operations, covering:
 - All 6 memory ordering models
@@ -11,7 +11,7 @@ This module provides a comprehensive deep-dive into C++ atomic operations, cover
 
 ---
 
-## 💡 Core Insights
+## Core Insights
 
 ### 1. **Atomicity ≠ Synchronization**
 
@@ -275,7 +275,7 @@ if (head != tail) {
 
 ---
 
-## 📊 Performance Results
+## Performance Results
 
 From our benchmarks (x86-64, 4-core):
 
@@ -302,11 +302,11 @@ From our benchmarks (x86-64, 4-core):
 | No padding    | 8.2M ops/sec  | 1.0x     |
 | With padding  | 24.5M ops/sec | **3.0x** |
 
-**Key Takeaway:** Small choices have massive performance impact!
+**Key Takeaway:** Small choices have massive performance impact
 
 ---
 
-## 🚨 Common Pitfalls & Solutions
+## Common Pitfalls & Solutions
 
 ### Pitfall 1: Using `relaxed` for Synchronization
 ```cpp
@@ -365,7 +365,7 @@ while (!x.compare_exchange_weak(expected, 20)) {
 
 ---
 
-## 🎓 What's Next?
+## What's Next?
 
 Now that you understand atomics deeply, you're ready for:
 
@@ -384,7 +384,7 @@ Now that you understand atomics deeply, you're ready for:
 
 ---
 
-## ✨ Achievement Unlocked!
+## Achievement Unlocked
 
 You now understand:
 - ✅ What atomics are and how they work at the CPU level
@@ -395,7 +395,7 @@ You now understand:
 - ✅ Compare-and-swap and CAS loops
 - ✅ How to write correct, fast lock-free code
 
-**This is the foundation for all advanced lock-free programming!**
+**This is the foundation for all advanced lock-free programming**
 
 ---
 
