@@ -45,7 +45,7 @@ void demo_relaxed_counter() {
     std::cout << "Duration: " << duration.count() << " us\n";
     std::cout << "Throughput: " << std::fixed << std::setprecision(2) 
               << (NUM_THREADS * INCREMENTS_PER_THREAD / (duration.count() / 1e6) / 1e6) 
-              << " million ops/sec\n"
+              << " million ops/sec\n";
 
     assert(counter.get() == NUM_THREADS * INCREMENTS_PER_THREAD);
     std::cout << "[PASS] Count is correct!\n";

@@ -72,14 +72,14 @@ namespace hft::benchmark {
 
         // Fill buffer halfway to test realistic scenario
         for (size_t i = 0; i < BUFFER_SIZE / 2; ++i) {
-            ring_buffer.try_push(static_cast<int>(i));
+            (void)ring_buffer.try_push(static_cast<int>(i));
         }
 
         auto start = std::chrono::high_resolution_clock::now();
 
         for (size_t i = 0; i < NUM_ITERATIONS; ++i) {
-            ring_buffer.try_push(static_cast<int>(i));
-            ring_buffer.try_pop();
+            (void)ring_buffer.try_push(static_cast<int>(i));
+            (void)ring_buffer.try_pop();
         }
 
         auto end = std::chrono::high_resolution_clock::now();
@@ -119,8 +119,8 @@ namespace hft::benchmark {
         std::cout << "Warming up..." << std::endl;
         for (size_t i = 0; i < WARMUP_ITERATIONS; ++i) {
             hft::core::RingBuffer<int, BUFFER_SIZE> rb;
-            rb.try_push(i);
-            rb.try_pop();
+            (void)rb.try_push(i);
+            (void)rb.try_pop();
         }
 
         // Run Ring Buffer benchmark
