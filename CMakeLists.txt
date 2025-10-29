@@ -47,6 +47,7 @@ add_subdirectory(01_modern_cpp_basics)
 add_subdirectory(02_ring_buffer)
 add_subdirectory(03_memory_pool)
 add_subdirectory(04_smart_pointers)
+add_subdirectory(05_atomics)
 
 # Custom targets for convenience
 add_custom_target(run_all_examples
@@ -61,4 +62,6 @@ message(STATUS "Modules configured:")
 message(STATUS "  - 01_modern_cpp_basics")
 message(STATUS "  - 02_ring_buffer")
 message(STATUS "  - 03_memory_pool")
+message(STATUS "  - 04_smart_pointers")
+message(STATUS "  - 05_atomics")
 message(STATUS "===========================================")
